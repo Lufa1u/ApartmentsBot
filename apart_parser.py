@@ -8,6 +8,29 @@ import telebot
 from telebot import types
 
 
+class Setup:
+
+    def __init__(self) -> None:
+        self.markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+
+    __mmenu = types.KeyboardButton('Главное меню')
+    __search = types.KeyboardButton('Поиск')
+
+    def create_button(self, butt_name):
+        self.button = types.KeyboardButton(butt_name)
+        self.markup.add(self.button)
+
+    def create_markup(self, add_mmenu=bool, add_search=bool):
+        if add_mmenu:
+            self.markup.add(self.__mmenu)
+        if add_search:
+            self.markup.add(self.__search)
+        return self.markup
+
+    def clear_markup(self):
+        del self.markup
+
+
 PATH = "X:/projects/Avito_Apartment_Parser/API_KEY.json"
 
 with open(PATH, 'r') as f:
@@ -18,49 +41,49 @@ TELEGRAM_API_KEY = data['KEYS']['TELEGRAM']
 bot = bot = telebot.TeleBot(TELEGRAM_API_KEY)
 
 
+def choise_number_rooms(setup, chat_id, mes_text):
+    setup.create_button('Однушка')
+    setup.create_button('Двушка')
+    setup.create_button('Трешка')
+    markup = setup.create_markup(True, False)
+    setup.clear_markup()
+    bot.send_message(chat_id, text=mes_text, reply_markup=markup)
+
+
+def choise_city(setup, chat_id, mes_text):
+    setup.create_button('Москва')
+    setup.create_button('Санкт-Петербург')
+    markup = setup.create_markup(True, False)
+    setup.clear_markup()
+    bot.send_message(chat_id, text=mes_text, reply_markup=markup)
+
+
+def main_menu(setup, chat_id, mes_text):
+    setup.create_button('Сменить город')
+    setup.create_button('Выбрать кол. комнат')
+    markup = setup.create_markup(False, True)
+    setup.clear_markup()
+    bot.send_message(chat_id, text=mes_text, reply_markup=markup)
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    button1 = types.KeyboardButton('Сменить город')
-    button2 = types.KeyboardButton('Выбрать кол. комнат')
-    markup.add(button1, button2)
-    bot.send_message(
-        message.chat.id,
-        text='Привет! Выбранный город: Москва. Что будем искать?',
-        reply_markup=markup)
+    setup = Setup()
+    main_menu(setup, message.chat.id, 'Привет! Выбранный город: Москва.')
 
 
 @bot.message_handler(content_types=['text'])
 def bot_message(message):
-    'https://www.avito.ru/moskva/nedvizhimost'
+    setup = Setup()
+    chat_id = message.chat.id
     if message.chat.type == 'private':
         match message.text:
             case 'Выбрать кол. комнат':
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                button1 = types.KeyboardButton('Однушка')
-                button2 = types.KeyboardButton('Двушка')
-                button3 = types.KeyboardButton('Трешка')
-                main_menu = types.KeyboardButton('Главное меню')
-                markup.add(button1, button2, button3, main_menu)
-                bot.send_message(
-                    message.chat.id, text='Выбрать кол. комнат',
-                    reply_markup=markup)
+                choise_number_rooms(setup, chat_id, 'Выберете кол. комнат')
             case 'Сменить город':
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                button1 = types.KeyboardButton('Москва')
-                button2 = types.KeyboardButton('Санкт-Петербург')
-                main_menu = types.KeyboardButton('Главное меню')
-                markup.add(button1, button2, main_menu)
-                bot.send_message(
-                    message.chat.id, text='Сменить город', reply_markup=markup)
+                choise_city(setup, chat_id, 'Выберете город')
             case 'Главное меню':
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                button1 = types.KeyboardButton('Сменить город')
-                button2 = types.KeyboardButton('Выбрать кол. комнат')
-                markup.add(button1, button2)
-                bot.send_message(
-                    message.chat.id, text='Что будем искать?',
-                    reply_markup=markup)
+                main_menu(setup, chat_id, 'Главное меню')
             case 'Однушка':
                 pass
             case 'Двушка':
@@ -68,28 +91,8 @@ def bot_message(message):
             case 'Трешка':
                 pass
             case 'Москва':
-                city = 'moskva'
-                url = 'https://www.avito.ru/' + city + '/nedvizhimost'
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                button1 = types.KeyboardButton(
-                    'Найти самые выгодные предложения')
-                main_menu = types.KeyboardButton('Главное меню')
-                markup.add(button1, main_menu)
-                bot.send_message(
-                    message.chat.id, text='Выбран город: Москва',
-                    reply_markup=markup)
+                pass
             case 'Санкт-Петербург':
-                city = 'sankt-peterburg'
-                url = 'https://www.avito.ru/' + city + '/nedvizhimost'
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                button1 = types.KeyboardButton(
-                    'Найти самые выгодные предложения')
-                main_menu = types.KeyboardButton('Главное меню')
-                markup.add(button1, main_menu)
-                bot.send_message(
-                    message.chat.id, text='Выбран город: Санкт-Петербург',
-                    reply_markup=markup)
-            case 'Найти самые выгодные предложения':
                 pass
 
 
