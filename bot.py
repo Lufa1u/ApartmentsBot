@@ -1,20 +1,18 @@
 import json
 
-from bs4 import BeautifulSoup
-
-import requests
-
 import telebot
 from telebot import types
 
 
 class Setup:
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
     __mmenu = types.KeyboardButton('Главное меню')
     __search = types.KeyboardButton('Поиск')
+    city = str
+    city = 'moskva'
 
     def create_button(self, butt_name):
         self.button = types.KeyboardButton(butt_name)
@@ -41,10 +39,16 @@ TELEGRAM_API_KEY = data['KEYS']['TELEGRAM']
 bot = bot = telebot.TeleBot(TELEGRAM_API_KEY)
 
 
-def choise_number_rooms(setup, chat_id, mes_text):
-    setup.create_button('Однушка')
-    setup.create_button('Двушка')
-    setup.create_button('Трешка')
+def main_menu(setup, chat_id, mes_text):
+    setup.create_button('Настройки')
+    markup = setup.create_markup(False, True)
+    setup.clear_markup()
+    bot.send_message(chat_id, text=mes_text, reply_markup=markup)
+
+
+def settings(setup, chat_id, mes_text):
+    setup.create_button('Выбрать город')
+    setup.create_button('Выбрать кол. комнат')
     markup = setup.create_markup(True, False)
     setup.clear_markup()
     bot.send_message(chat_id, text=mes_text, reply_markup=markup)
@@ -58,10 +62,11 @@ def choise_city(setup, chat_id, mes_text):
     bot.send_message(chat_id, text=mes_text, reply_markup=markup)
 
 
-def main_menu(setup, chat_id, mes_text):
-    setup.create_button('Сменить город')
-    setup.create_button('Выбрать кол. комнат')
-    markup = setup.create_markup(False, True)
+def choise_number_rooms(setup, chat_id, mes_text):
+    setup.create_button('Одна-комнатная')
+    setup.create_button('Двух-комнатная')
+    setup.create_button('Трех-комнатная')
+    markup = setup.create_markup(True, False)
     setup.clear_markup()
     bot.send_message(chat_id, text=mes_text, reply_markup=markup)
 
@@ -78,22 +83,29 @@ def bot_message(message):
     chat_id = message.chat.id
     if message.chat.type == 'private':
         match message.text:
-            case 'Выбрать кол. комнат':
-                choise_number_rooms(setup, chat_id, 'Выберете кол. комнат')
-            case 'Сменить город':
-                choise_city(setup, chat_id, 'Выберете город')
             case 'Главное меню':
                 main_menu(setup, chat_id, 'Главное меню')
-            case 'Однушка':
+            case 'Настройки':
+                settings(setup, chat_id, 'Настройки')
+            case 'Выбрать город':
+                choise_city(setup, chat_id, 'Выберете город')
+            case 'Выбрать кол. комнат':
+                choise_number_rooms(setup, chat_id, 'Выберете кол. комнат')
+            case 'Одна-комнатная':
                 pass
-            case 'Двушка':
+            case 'Двух-комнатная':
                 pass
-            case 'Трешка':
+            case 'Трех-комнатная':
                 pass
             case 'Москва':
-                pass
+                Setup.city = 'moskva'
+                settings(setup, chat_id, 'Выбран город: Москва')
             case 'Санкт-Петербург':
-                pass
+                Setup.city = 'sankt-peterburg'
+                settings(setup, chat_id, 'Выбран город: Санкт-Петербург')
 
 
 bot.polling()
+
+if __name__ == '__main__':
+    setup = Setup()
