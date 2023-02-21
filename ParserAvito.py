@@ -3,10 +3,8 @@ from bs4 import BeautifulSoup as bs
 from fake_useragent import UserAgent
 
 import requests
-from requests.exceptions import ConnectionError, ProxyError, ReadTimeout, SSLError
 
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
 
 from selenium_stealth import stealth
@@ -46,6 +44,7 @@ my_proxy = MyProxy()
 def create_driver(proxy: str = None):
     if proxy is None:
         proxy = MyProxy.list_ip[-1]
+        MyProxy.list_ip.pop(-1)
 
     ua = UserAgent()
 
@@ -57,9 +56,11 @@ def create_driver(proxy: str = None):
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument(f"--proxy-server={proxy}")
 
+    prefs = {"profile.managed_default_content_settings.images": 2}
     options.add_experimental_option(
         "excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
+    options.add_experimental_option('prefs', prefs)
     driver = webdriver.Chrome(
         options=options, executable_path='X:/projects/Avito_Apartment_Parser/ChromeDriver/chromedriver.exe')
 
@@ -81,9 +82,10 @@ def soup_parser(html):
     refs = soup.find_all(
         'a', class_='link-link-MbQDP link-design-default-_nSbv title-root-zZCwT iva-item-title-py3i_ ' +
                     'title-listRedesign-_rejR title-root_maxHeight-X6PsH')
-    for ref in refs:
-        links.append('https://www.avito.ru' + ref['href'])
-    return links
+    if refs is not None:
+        for ref in refs:
+            links.append('https://www.avito.ru' + ref['href'])
+        return links
 
 
 def search_apart(url):
@@ -95,36 +97,10 @@ def search_apart(url):
             html = driver.find_element(
                 By.CLASS_NAME, 'index-root-KVurS').get_attribute('innerHTML')
             result = soup_parser(html)
-            if result != '':
-                driver.quit()
-                return result
-            else:
-                continue
-        except (ProxyError, ConnectionError, ReadTimeout, SSLError, WebDriverException):
+            driver.quit()
+            return str(result[0] + '\n' + result[1] + result[2] + result[3] + result[4] + result[5])
+        except Exception:
+            driver.close()
             driver = create_driver(ip)
             list_ip.pop(list_ip.index(ip))
             continue
-
-
-def check():
-    url = 'https://hidemy.name/ru/what-is-my-ip/'
-    errors = 0
-    ips = []
-    driver = create_driver()
-    list_ip = my_proxy.list_ip
-    for ip in list_ip:
-        try:
-            driver.get(url)
-            html = driver.find_element(By.CLASS_NAME, 'ip')
-            soup = bs(html.text, 'lxml')
-            my_ip = str(soup)
-            print(my_ip)
-            ips.append(my_ip)
-        except (ProxyError, ConnectionError, ReadTimeout, SSLError, WebDriverException):
-            driver = create_driver(ip)
-            list_ip.pop(list_ip.index(ip))
-            errors = errors + 1
-            continue
-    driver.quit()
-    print(ips)
-    print(errors)

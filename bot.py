@@ -1,6 +1,5 @@
 import json
 
-from ParserAvito import check
 from ParserAvito import search_apart
 
 import telebot
@@ -21,13 +20,17 @@ class BotSettings:
 
     def __init__(self):
         self.markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        BotSettings.city = 'moskva'
-        BotSettings.rooms = ''
-        BotSettings.all_var = '-ASgBAgICAkSSA8gQ8AeQUg'
-        BotSettings.url = f'https://www.avito.ru/{self.city}/kvartiry/sdam/na_dlitelnyy_srok{self.rooms}{self.all_var}'
+
+    city = 'moskva'
+    rooms = ''
+    all_var = '-ASgBAgICAkSSA8gQ8AeQUg'
 
     __mmenu = types.KeyboardButton('Главное меню')
     __search = types.KeyboardButton('Поиск')
+
+    def create_url(self):
+        BotSettings.url = f'https://www.avito.ru/{self.city}/kvartiry/sdam/na_dlitelnyy_srok{self.rooms}{self.all_var}'
+        return self.url
 
     def create_button(self, butt_name):
         self.button = types.KeyboardButton(butt_name)
@@ -45,11 +48,9 @@ class BotSettings:
 
     def search(self, chat_id, url):
         bot.send_message(
-            chat_id, 'Поиск подходящих квартир займет не больше минуты, ожидайте сообщения от бота.')
+            chat_id, 'Поиск подходящих квартир займет не больше пяти минут, ожидайте сообщения от бота.')
         mes_text = search_apart(url)
         bot.send_message(chat_id, mes_text)
-        # check()
-        # bot.send_message(chat_id, 'Check done!')
 
     def main_menu(self, chat_id, mes_text):
         self.create_button('Настройки')
@@ -59,7 +60,7 @@ class BotSettings:
 
     def settings(self, chat_id, mes_text):
         self.create_button('Выбрать город')
-        self.create_button('Выбрать кол. комнат')
+        self.create_button('Выбрать планировку')
         markup = self.create_markup(True, False)
         self.clear_markup()
         bot.send_message(chat_id, mes_text, reply_markup=markup)
@@ -71,7 +72,7 @@ class BotSettings:
         self.clear_markup()
         bot.send_message(chat_id, mes_text, reply_markup=markup)
 
-    def choise_number_rooms(self, chat_id, mes_text):
+    def choise_layout(self, chat_id, mes_text):
         self.create_button('Студия')
         self.create_button('Одна-комнатная')
         self.create_button('Двух-комнатная')
@@ -87,6 +88,9 @@ def start(message):
     hello_message = 'Привет, этот бот поможет снять тебе квартиру по самой низкой цене!\n\n' + \
         'Сейчас выставлены стандартные настройки для поиска:\n' + 'Все варианты в городе Москва\n\n' + \
         'Вы можете изменить их во вкладке "Настройки"'
+    BotSettings.city = 'moskva'
+    BotSettings.rooms = ''
+    BotSettings.all_var = '-ASgBAgICAkSSA8gQ8AeQUg'
     setup = BotSettings()
     setup.main_menu(message.chat.id, hello_message)
 
@@ -98,15 +102,16 @@ def bot_message(message):
     if message.chat.type == 'private':
         match message.text:
             case 'Поиск':
-                setup.search(chat_id, BotSettings.url)
+                url = setup.create_url()
+                setup.search(chat_id, url)
             case 'Главное меню':
                 setup.main_menu(chat_id, 'Главное меню')
             case 'Настройки':
                 setup.settings(chat_id, 'Настройки')
             case 'Выбрать город':
                 setup.choise_city(chat_id, 'Выберете город')
-            case 'Выбрать кол. комнат':
-                setup.choise_number_rooms(chat_id, 'Выберете кол. комнат')
+            case 'Выбрать планировку':
+                setup.choise_layout(chat_id, 'Выберете планировку')
             case 'Студия':
                 BotSettings.all_var = ''
                 BotSettings.rooms = '/studii-ASgBAQICAkSSA8gQ8AeQUgFAzAgUjFk'
