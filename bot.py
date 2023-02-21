@@ -1,18 +1,33 @@
 import json
 
+from ParserAvito import check
+from ParserAvito import search_apart
+
 import telebot
 from telebot import types
 
 
-class Setup:
+PATH = "X:/projects/Avito_Apartment_Parser/API_KEY.json"
+
+with open(PATH, 'r') as f:
+    data = json.loads(f.read())
+
+TELEGRAM_API_KEY = data['KEYS']['TELEGRAM']
+
+bot = bot = telebot.TeleBot(TELEGRAM_API_KEY)
+
+
+class BotSettings:
 
     def __init__(self):
         self.markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        BotSettings.city = 'moskva'
+        BotSettings.rooms = ''
+        BotSettings.all_var = '-ASgBAgICAkSSA8gQ8AeQUg'
+        BotSettings.url = f'https://www.avito.ru/{self.city}/kvartiry/sdam/na_dlitelnyy_srok{self.rooms}{self.all_var}'
 
     __mmenu = types.KeyboardButton('Главное меню')
     __search = types.KeyboardButton('Поиск')
-    city = str
-    city = 'moskva'
 
     def create_button(self, butt_name):
         self.button = types.KeyboardButton(butt_name)
@@ -28,84 +43,96 @@ class Setup:
     def clear_markup(self):
         del self.markup
 
+    def search(self, chat_id, url):
+        bot.send_message(
+            chat_id, 'Поиск подходящих квартир займет не больше минуты, ожидайте сообщения от бота.')
+        mes_text = search_apart(url)
+        bot.send_message(chat_id, mes_text)
+        # check()
+        # bot.send_message(chat_id, 'Check done!')
 
-PATH = "X:/projects/Avito_Apartment_Parser/API_KEY.json"
+    def main_menu(self, chat_id, mes_text):
+        self.create_button('Настройки')
+        markup = self.create_markup(False, True)
+        self.clear_markup()
+        bot.send_message(chat_id, mes_text, reply_markup=markup)
 
-with open(PATH, 'r') as f:
-    data = json.loads(f.read())
+    def settings(self, chat_id, mes_text):
+        self.create_button('Выбрать город')
+        self.create_button('Выбрать кол. комнат')
+        markup = self.create_markup(True, False)
+        self.clear_markup()
+        bot.send_message(chat_id, mes_text, reply_markup=markup)
 
-TELEGRAM_API_KEY = data['KEYS']['TELEGRAM']
+    def choise_city(self, chat_id, mes_text):
+        self.create_button('Москва')
+        self.create_button('Санкт-Петербург')
+        markup = self.create_markup(True, False)
+        self.clear_markup()
+        bot.send_message(chat_id, mes_text, reply_markup=markup)
 
-bot = bot = telebot.TeleBot(TELEGRAM_API_KEY)
-
-
-def main_menu(setup, chat_id, mes_text):
-    setup.create_button('Настройки')
-    markup = setup.create_markup(False, True)
-    setup.clear_markup()
-    bot.send_message(chat_id, text=mes_text, reply_markup=markup)
-
-
-def settings(setup, chat_id, mes_text):
-    setup.create_button('Выбрать город')
-    setup.create_button('Выбрать кол. комнат')
-    markup = setup.create_markup(True, False)
-    setup.clear_markup()
-    bot.send_message(chat_id, text=mes_text, reply_markup=markup)
-
-
-def choise_city(setup, chat_id, mes_text):
-    setup.create_button('Москва')
-    setup.create_button('Санкт-Петербург')
-    markup = setup.create_markup(True, False)
-    setup.clear_markup()
-    bot.send_message(chat_id, text=mes_text, reply_markup=markup)
-
-
-def choise_number_rooms(setup, chat_id, mes_text):
-    setup.create_button('Одна-комнатная')
-    setup.create_button('Двух-комнатная')
-    setup.create_button('Трех-комнатная')
-    markup = setup.create_markup(True, False)
-    setup.clear_markup()
-    bot.send_message(chat_id, text=mes_text, reply_markup=markup)
+    def choise_number_rooms(self, chat_id, mes_text):
+        self.create_button('Студия')
+        self.create_button('Одна-комнатная')
+        self.create_button('Двух-комнатная')
+        self.create_button('Трех-комнатная')
+        self.create_button('Все варианты')
+        markup = self.create_markup(True, False)
+        self.clear_markup()
+        bot.send_message(chat_id, mes_text, reply_markup=markup)
 
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    setup = Setup()
-    main_menu(setup, message.chat.id, 'Привет! Выбранный город: Москва.')
+    hello_message = 'Привет, этот бот поможет снять тебе квартиру по самой низкой цене!\n\n' + \
+        'Сейчас выставлены стандартные настройки для поиска:\n' + 'Все варианты в городе Москва\n\n' + \
+        'Вы можете изменить их во вкладке "Настройки"'
+    setup = BotSettings()
+    setup.main_menu(message.chat.id, hello_message)
 
 
 @bot.message_handler(content_types=['text'])
 def bot_message(message):
-    setup = Setup()
+    setup = BotSettings()
     chat_id = message.chat.id
     if message.chat.type == 'private':
         match message.text:
+            case 'Поиск':
+                setup.search(chat_id, BotSettings.url)
             case 'Главное меню':
-                main_menu(setup, chat_id, 'Главное меню')
+                setup.main_menu(chat_id, 'Главное меню')
             case 'Настройки':
-                settings(setup, chat_id, 'Настройки')
+                setup.settings(chat_id, 'Настройки')
             case 'Выбрать город':
-                choise_city(setup, chat_id, 'Выберете город')
+                setup.choise_city(chat_id, 'Выберете город')
             case 'Выбрать кол. комнат':
-                choise_number_rooms(setup, chat_id, 'Выберете кол. комнат')
+                setup.choise_number_rooms(chat_id, 'Выберете кол. комнат')
+            case 'Студия':
+                BotSettings.all_var = ''
+                BotSettings.rooms = '/studii-ASgBAQICAkSSA8gQ8AeQUgFAzAgUjFk'
+                setup.main_menu(chat_id, 'Выбраны студии')
             case 'Одна-комнатная':
-                pass
+                BotSettings.all_var = ''
+                BotSettings.rooms = '/1-komnatnye-ASgBAQICAkSSA8gQ8AeQUgFAzAgUjlk'
+                setup.main_menu(chat_id, 'Выбрано комнат: 1')
             case 'Двух-комнатная':
-                pass
+                BotSettings.all_var = ''
+                BotSettings.rooms = '/2-komnatnye-ASgBAQICAkSSA8gQ8AeQUgFAzAgUkFk'
+                setup.main_menu(chat_id, 'Выбрано комнат: 2')
             case 'Трех-комнатная':
-                pass
+                BotSettings.all_var = ''
+                BotSettings.rooms = '/3-komnatnye-ASgBAQICAkSSA8gQ8AeQUgFAzAgUklk'
+                setup.main_menu(chat_id, 'Выбрано комнат: 3')
+            case 'Все варианты':
+                BotSettings.rooms = ''
+                BotSettings.all_var = '-ASgBAgICAkSSA8gQ8AeQUg'
+                setup.main_menu(chat_id, 'Выбраны все варианты')
             case 'Москва':
-                Setup.city = 'moskva'
-                settings(setup, chat_id, 'Выбран город: Москва')
+                BotSettings.city = 'moskva'
+                setup.settings(chat_id, 'Выбран город: Москва')
             case 'Санкт-Петербург':
-                Setup.city = 'sankt-peterburg'
-                settings(setup, chat_id, 'Выбран город: Санкт-Петербург')
+                BotSettings.city = 'sankt-peterburg'
+                setup.settings(chat_id, 'Выбран город: Санкт-Петербург')
 
 
 bot.polling()
-
-if __name__ == '__main__':
-    setup = Setup()
