@@ -46,6 +46,7 @@ class MyProxy:
                     MyProxy.good_list_ip.append(ip)
             except Exception:
                 continue
+        print(f'Настройка завершена, добавлено {len(MyProxy.good_list_ip)} прокси')
 
 
 my_proxy = MyProxy()
