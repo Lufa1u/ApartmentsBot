@@ -13,7 +13,7 @@ with open(PATH, 'r') as f:
 
 TELEGRAM_API_KEY = data['KEYS']['TELEGRAM']
 
-bot = bot = telebot.TeleBot(TELEGRAM_API_KEY)
+bot = telebot.TeleBot(TELEGRAM_API_KEY)
 
 
 class BotSettings:
